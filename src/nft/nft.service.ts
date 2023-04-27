@@ -5,24 +5,18 @@ import { EvmChain } from "@moralisweb3/common-evm-utils";
 import { exec } from 'child_process';
 import Nft from './nft.model'
 import { stringify } from 'querystring';
-
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
-import { ddbDocClient } from "./table/ddbDocClient";
 import { NftModule } from "./nft.module";
+import { PutItemCommand } from '@aws-sdk/client-dynamodb';
+import { putItem, refresh_Time,ddb } from './table';
 
 let nft: Nft;
-
-// const command = 'tsc nft.servi';
-
-// exec(command, (error, stdout, stderr) => {
-//   if (error) {
-//     console.error(`Error executing command: ${error}`);
-//     return;
-//   }
-  
-// });
+let LastRefresh = 0;
+let ddbdb = new DynamoDB({region: 'eu-north-1'});
 
 
+
+const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
 @Injectable()
 export class NftsService {
   private readonly dynamoDB: DynamoDB;
@@ -30,11 +24,11 @@ export class NftsService {
   
 
   constructor() {
-    this.dynamoDB = new DynamoDB({ region: 'eu-north-1' }); // Replace with your desired region
+    this.dynamoDB = new DynamoDB({ region: 'eu-north-1' }); 
     this.moralis = Moralis; 
     Moralis.start({
         apiKey: "JRYnwiErZhxoxdGD1fKslNfx0CJNFNgEPg3WLtpU239mvT6FdXumtzX0MScXQYgu"
-    });// Replace with your Moralis app ID and key
+    });
   }
 
   async runCommand(command: string): Promise<string> {
@@ -54,11 +48,11 @@ export class NftsService {
 
   }
 
-  
-  
+  async getData(){
 
-  async seconf(){
-
+    let current = Date.now()/1000;
+    if(current- >=120){
+        LastRefresh = current;
     
     const chain = EvmChain.ETHEREUM;
     const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
@@ -66,33 +60,49 @@ export class NftsService {
     const nfts = await Moralis.EvmApi.nft.getContractNFTs({
         address,
         chain,
+        mediaItems: true
 
     });
-    const hhh = [];
-    // const resul = await this.runCommand('ls');
-    // console.log(resul);
+       
+        for(var i = 0; i<nfts.result.length; i++){ 
+       putItem(
+        (nfts.result[i].format().tokenAddress),
+        address,
+        String(nfts.result[i].name),
+        String(nfts.result[i].tokenUri),
+        JSON.stringify(nfts.result[i].format().metadata),
+        JSON.stringify(nfts.result[i].format().media.mediaCollection),
+        ( nfts.result[i].format().media.originalMediaUrl),
+        JSON.stringify(nfts.result[i].format().media.mimetype),
+        String(LastRefresh),   
+        JSON.stringify(nfts.result[i].format().tokenId),
+       );
     
-         
-        const hh = nfts.result;
-        // // nft.tokenAddress = hh.tokenAddress;
-        // nft.walletAddress = address;
-        // nft.tokenAddress =  String(hh.tokenAddress)
-        // nft.nftsName= hh.name;
-        // nft.nftDesc =  null;
-        // nft.thumbnailUrl=hh.tokenUri;
-        
-        // nft.Metadata=String(hh.metadata);
-        // nft.refreshTime= Math.floor(Date.now()/1000);
-        // nft.mediaType = String(hh.media);
-
-        hhh.push(hh);
-        
     
-    // const hh = nfts.result[0];
-
-    return hhh[0];
+        }
+    return nfts.result;
 
   }
-
+  else{
+    
+    return 'Wait for 2 mins';
+    
 }
+
+    
+    
+
+
+    
+}
+
+
+
+  
+  
+}
+ 
+
+  
+ 
 
