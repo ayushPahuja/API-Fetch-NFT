@@ -51,7 +51,7 @@ export class NftsService {
   async getData(){
 
     let current = Date.now()/1000;
-    if(current- >=120){
+    if(current-LastRefresh >=120){
         LastRefresh = current;
     
     const chain = EvmChain.ETHEREUM;
