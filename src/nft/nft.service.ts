@@ -7,13 +7,13 @@ import Nft from './nft.model'
 import { stringify } from 'querystring';
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { NftModule } from "./nft.module";
-import { PutItemCommand } from '@aws-sdk/client-dynamodb';
-import { putItem, refresh_Time,ddb } from './table';
+import { PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
+import { putItem, refresh_Time,ddb, getAll, deleteItem } from './table';
 
 let nft: Nft;
 let LastRefresh = 0;
-let ddbdb = new DynamoDB({region: 'eu-north-1'});
-
+let dynamodb = new DynamoDB({region: 'eu-north-1'});
+export let update = [];
 
 
 const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
@@ -43,17 +43,8 @@ export class NftsService {
     });
   }
 
-  async getNftsByAddress() {
-    
-
-  }
 
   async getData(){
-
-    let current = Date.now()/1000;
-    if(current-LastRefresh >=120){
-        LastRefresh = current;
-    
     const chain = EvmChain.ETHEREUM;
     const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
 
@@ -63,43 +54,78 @@ export class NftsService {
         mediaItems: true
 
     });
+    update.push(nfts.result);
+    let Result = nfts.result;
+
+    let current = Date.now()/1000;
+    if(current-LastRefresh >=300){
+        LastRefresh = current;
+    
+   
        
-        for(var i = 0; i<nfts.result.length; i++){ 
+       
+        for(let i = 0; i<
+            20; i++){ 
        putItem(
-        (nfts.result[i].format().tokenAddress),
-        address,
-        String(nfts.result[i].name),
-        String(nfts.result[i].tokenUri),
-        JSON.stringify(nfts.result[i].format().metadata),
-        JSON.stringify(nfts.result[i].format().media.mediaCollection),
-        ( nfts.result[i].format().media.originalMediaUrl),
-        JSON.stringify(nfts.result[i].format().media.mimetype),
-        String(LastRefresh),   
-        JSON.stringify(nfts.result[i].format().tokenId),
-       );
+        Result[i].format().tokenAddress ?? "NULL",
+        JSON.stringify(Result[i].tokenId) ?? "NULL",
+        address ?? "NULL",
+        String(Result[i].format().name) ?? "NULL",
+        JSON.parse(JSON.stringify(Result[i].format().metadata)).description ?? "NULL",
+        JSON.stringify(Result[i].format().metadata) ?? "NULL",
+        JSON.stringify(Result[i].media.originalMediaUrl) ?? "NULL",
+        JSON.stringify(Result[i].media.mediaCollection.low) ?? "NULL",
+        String(Result[i].format().media.mimetype) ?? "NULL",
+        JSON.stringify(Result[i].format().tokenHash),
+        String(refresh_Time) ?? "NULL",
+        );
+        
+    }
+
+    //Deleting the data using TokenHash
+    // for(let i=0; i<21; i++){
+    // const run = async (
+    //     _ContractId: string, 
+    //     _TokenId: string) => {
+    //     try {
     
+    //         const param = {
+    //             KeyConditionExpression: "Contract__Id = :s and Token__Id = :e",
+                
+    //             ExpressionAttributeValues: {
+    //               ":s": { S: _ContractId },
+    //               ":e": { S:  _TokenId},
+                  
+    //             },
+                
+    //             TableName: "NFT__TABLE",
+    //           };
     
-        }
-    return nfts.result;
+    //       const data = await ddb.send(new QueryCommand(param));
+    //       let hh = [];
+    //       hh.push(JSON.stringify(data));
+    //       console.log(hh);
+          
+    //     } catch (err) {
+    //       console.error(err);
+    //     }
+    //   };
+    //   run(Result[i].format().tokenAddress, JSON.stringify(Result[i].tokenId) )
+    // } 
+
+
+
+
+   
+    
+    return update[0];
 
   }
-  else{
-    
-    return 'Wait for 2 mins';
-    
-}
-
-    
-    
-
-
-    
-}
-
-
-
-  
-  
+  else if(current-LastRefresh <300){
+    console.warn("Wait for 5 mins cooldown to update!!")
+    return update;
+        }
+    }
 }
  
 
