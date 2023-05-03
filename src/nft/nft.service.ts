@@ -8,12 +8,15 @@ import { stringify } from 'querystring';
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { NftModule } from "./nft.module";
 import { PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
-import { putItem, refresh_Time,ddb, getAll, deleteItem } from './table';
+import { putItem, refresh_Time,ddb, getAll, deleteItem, query, ddbDocClient } from './table';
+import { async, concat } from 'rxjs';
 
-let nft: Nft;
+
+
 let LastRefresh = 0;
 let dynamodb = new DynamoDB({region: 'eu-north-1'});
-export let update = [];
+const UpdateArray = [];
+
 
 
 const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
@@ -54,76 +57,74 @@ export class NftsService {
         mediaItems: true
 
     });
-    update.push(nfts.result);
+    
     let Result = nfts.result;
 
     let current = Date.now()/1000;
     if(current-LastRefresh >=300){
         LastRefresh = current;
-    
+        
    
        
        
-        for(let i = 0; i<
-            20; i++){ 
+     for(let i = 0; i<21; i++){ 
+        let info = Result[i].format(); //info fetched
+         // as the tokenId is a string|number we need to remove " from it;
+        let newStr = String(info.tokenId).replace('"' , '');
        putItem(
-        Result[i].format().tokenAddress ?? "NULL",
-        JSON.stringify(Result[i].tokenId) ?? "NULL",
+        info.tokenAddress ?? "NULL",
+        newStr ?? "NULL",
         address ?? "NULL",
-        String(Result[i].format().name) ?? "NULL",
-        JSON.parse(JSON.stringify(Result[i].format().metadata)).description ?? "NULL",
-        JSON.stringify(Result[i].format().metadata) ?? "NULL",
+        String(info.name) ?? "NULL",
+        JSON.parse(JSON.stringify(info.metadata)).description ?? "NULL",
+        JSON.stringify(info.metadata) ?? "NULL",
         JSON.stringify(Result[i].media.originalMediaUrl) ?? "NULL",
         JSON.stringify(Result[i].media.mediaCollection.low) ?? "NULL",
-        String(Result[i].format().media.mimetype) ?? "NULL",
-        JSON.stringify(Result[i].format().tokenHash),
+        String(info.media.mimetype) ?? "NULL",
         String(refresh_Time) ?? "NULL",
         );
         
     }
 
-    //Deleting the data using TokenHash
-    // for(let i=0; i<21; i++){
+    //Deleting the data using ConcatKey
+    // for(let j=0; j<21; j++){
     // const run = async (
-    //     _ContractId: string, 
-    //     _TokenId: string) => {
+    //     _walletAddress: string, 
+    //     _concatKey: string) => {
     //     try {
-    
+    //         let info = Result[j].format();
+    //         const ConcatTokenAddress = info.tokenAddress;
+    //         const ConcatTokenId = String(info.tokenId);
+
+    //         //as we dont have concatinated string in the data we fetch from moralis so we make it!
+    //         const UpdatedArray =async (ConcatTokenAddress:string, ConcatTokenId:string ) => {
+    //             let out = ConcatTokenAddress+ ConcatTokenId;
+    //             UpdateArray.push(out);
+    //         }
     //         const param = {
-    //             KeyConditionExpression: "Contract__Id = :s and Token__Id = :e",
-                
+    //             KeyConditionExpression: "WalletAddress = :s and ConcatKey = :e",
     //             ExpressionAttributeValues: {
-    //               ":s": { S: _ContractId },
-    //               ":e": { S:  _TokenId},
-                  
+    //               ":s": { S: _walletAddress },
+    //               ":e": { S:  _concatKey},   
     //             },
-                
     //             TableName: "NFT__TABLE",
     //           };
-    
-    //       const data = await ddb.send(new QueryCommand(param));
-    //       let hh = [];
-    //       hh.push(JSON.stringify(data));
-    //       console.log(hh);
-          
+    //       const data = await ddbDocClient.send(new QueryCommand(param));
+    //       const uniqueKey = String(data.Items[j].ConcatKey);
     //     } catch (err) {
     //       console.error(err);
     //     }
     //   };
-    //   run(Result[i].format().tokenAddress, JSON.stringify(Result[i].tokenId) )
     // } 
+    // const index = UpdateArray.findIndex()
 
-
-
-
-   
-    
-    return update[0];
+    return Result;
 
   }
   else if(current-LastRefresh <300){
     console.warn("Wait for 5 mins cooldown to update!!")
-    return update;
+    const DataOfDb = query(address);
+    return DataOfDb; 
         }
     }
 }

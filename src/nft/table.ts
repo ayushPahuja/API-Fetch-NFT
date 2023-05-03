@@ -19,7 +19,7 @@ const marshallOptions = {
     wrapNumbers: false, 
   };
 
-  const ddbDocClient = DynamoDBDocumentClient.from(ddb,{
+  export const ddbDocClient = DynamoDBDocumentClient.from(ddb,{
     marshallOptions,
     unmarshallOptions,
   });
@@ -39,17 +39,18 @@ const marshallOptions = {
         rawUrl: string, 
         thumbnailUrl: string , 
         mediaType: string, 
-        _TokenHash: string,
         refreshTime: string,
         ) => {
 
         
     // Set the parameters.
     const params = {
-      TableName: "NFT__TABLE",
+      TableName: "NFT_Table",
       Item: {
-        Contract__Id: {S: tokenAddress}, 
-        Token__Id: {S: tokenId}, 
+        WalletAddress: {S: walletAddress}, 
+        ConcatKey: {S: (tokenAddress.concat(tokenId))},
+        TokenAddress:{S: tokenAddress},
+        TokenId : { S: tokenId}, 
         Refresh_Time: {S:refreshTime },
         Name: {S:nftsName},
         desciption:{S:nftDesc},
@@ -57,8 +58,8 @@ const marshallOptions = {
         RawUrl:{S:rawUrl},
         Metadata:{S:Metadata},
         mediaType:{S:mediaType},
-        TokenHash: {S: _TokenHash},
-        Wallet_Address : {S:walletAddress},
+        // TokenHash: {S: _TokenHash},
+        // Wallet_Address : {S:walletAddress},
       },
     };
     try {
@@ -130,3 +131,43 @@ export const getAll = async (_tableName: string)=> {
   }
 };
 // getAll("NFT__TABLE");
+
+//Query to get all the owned NFTS FROM database
+export const query = async (_walletAddress : string) => {
+    
+    try {
+        const param = {
+            TableName: "NFT_Table",
+            KeyConditionExpression: 'WalletAddress = :wa',
+            ExpressionAttributeValues: {
+            ':wa' : {S:_walletAddress},              
+            },
+            
+          };
+      const data = await ddbDocClient.send(new QueryCommand(param));
+      return data.Items;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  //Query to get the concatKey
+  export const Query = async (_walletAddress : string , _concatKey:string) => {
+    
+    try {
+        const param = {
+            TableName: "NFT_Table",
+            KeyConditionExpression: 'WalletAddress = :wa and ConcatKey= :c',
+            ExpressionAttributeValues: {
+            ':wa' : {S:_walletAddress}, 
+            ':c' : {S: _concatKey}             
+            },
+            
+          };
+      const data = await ddbDocClient.send(new QueryCommand(param));
+      return data.Items;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
