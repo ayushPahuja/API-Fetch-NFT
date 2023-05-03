@@ -19,7 +19,7 @@ const UpdateArray = [];
 
 
 
-const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
+const address = "YOUR_ADDRESS";
 @Injectable()
 export class NftsService {
   private readonly dynamoDB: DynamoDB;
@@ -30,7 +30,7 @@ export class NftsService {
     this.dynamoDB = new DynamoDB({ region: 'eu-north-1' }); 
     this.moralis = Moralis; 
     Moralis.start({
-        apiKey: "JRYnwiErZhxoxdGD1fKslNfx0CJNFNgEPg3WLtpU239mvT6FdXumtzX0MScXQYgu"
+        apiKey: "YOUR_API_KEY"
     });
   }
 
@@ -49,7 +49,7 @@ export class NftsService {
 
   async getData(){
     const chain = EvmChain.ETHEREUM;
-    const address = "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB";
+    
 
     const nfts = await Moralis.EvmApi.nft.getContractNFTs({
         address,
